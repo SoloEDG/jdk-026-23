@@ -14,6 +14,10 @@ export interface Move {
   before: Mark;
   after: Mark;
 }
+export interface HintRef {
+  id: string;
+  index: number;
+}
 export interface Session {
   puzzleId: string;
   marks: Mark[];
@@ -23,6 +27,10 @@ export interface Session {
   seconds: number;
   solved: boolean;
   updatedAt: number;
+  /** 棋盘数据版本：marks 每次实际变化时递增，用于裁决消息是否过期 */
+  rev: number;
+  /** 已生效的提示请求（幂等键 → 格子），同一请求重复提交不会再次扣费 */
+  hintRefs: HintRef[];
 }
 export interface SolveRecord {
   id: string;
@@ -38,11 +46,16 @@ export interface GameDocument {
   sessions: Record<string, Session>;
   records: SolveRecord[];
 }
+export interface FocusRequest {
+  puzzleId: string;
+  index: number;
+  nonce: number;
+}
 export type GameAction =
   | { type: "open"; id: string }
   | { type: "mark"; index: number; mark: Mark }
   | { type: "undo" }
-  | { type: "hint"; index: number; mark: Mark }
+  | { type: "hint"; index: number; mark: Mark; requestId?: string }
   | { type: "check" }
   | { type: "tick" }
   | { type: "reset" };

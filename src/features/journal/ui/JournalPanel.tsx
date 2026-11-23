@@ -45,15 +45,22 @@ export function JournalPanel({
       </div>
       {document.records.length ? (
         <div className="records">
-          {document.records.slice(0, 5).map((r) => (
-            <button key={r.id} onClick={() => onOpen(r.puzzleId)}>
-              <span>{puzzles.find((p) => p.id === r.puzzleId)?.title}</span>
-              <small>
-                {formatTime(r.seconds)} · 提示 {r.hints} 次
-              </small>
-              <ArrowRight size={15} />
-            </button>
-          ))}
+          {document.records.slice(0, 5).map((r) => {
+            const title = puzzles.find((p) => p.id === r.puzzleId)?.title;
+            return (
+              <button
+                key={r.id}
+                onClick={() => onOpen(r.puzzleId)}
+                aria-label={`回到已完成作品「${title}」，用时 ${formatTime(r.seconds)}，提示 ${r.hints} 次`}
+              >
+                <span>{title}</span>
+                <small>
+                  {formatTime(r.seconds)} · 提示 {r.hints} 次
+                </small>
+                <ArrowRight size={15} />
+              </button>
+            );
+          })}
         </div>
       ) : (
         <div className="empty-record">

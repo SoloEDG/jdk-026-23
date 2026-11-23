@@ -42,9 +42,14 @@ export function CatalogPanel({
           </button>
         ))}
       </div>
-      <div className="library-count">
+      <div className="library-count" aria-hidden="true">
         精选题库 <span>{visible.length.toString().padStart(2, "0")}</span>
       </div>
+      <p className="visually-hidden" role="status">
+        {visible.length
+          ? `找到 ${visible.length} 幅图案`
+          : "没有找到图案，试试其他关键词"}
+      </p>
       <div className="puzzle-list">
         {visible.map((p) => (
           <PuzzleCard

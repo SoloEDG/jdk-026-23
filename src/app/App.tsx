@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Grid2X2,
   Images,
@@ -9,22 +9,57 @@ import {
 } from "lucide-react";
 import { CatalogPanel, puzzles } from "../features/catalog";
 import { BoardPanel } from "../features/board";
-import { AssistPanel } from "../features/assist";
+import { AssistPanel, QuietCard } from "../features/assist";
 import { JournalPanel } from "../features/journal";
 import { GalleryPanel } from "../features/gallery";
+import { LiveRegion, NoticeCenter } from "../features/a11y";
 import { useGame } from "./useGame";
 export function App() {
   const game = useGame();
   const [page, setPage] = useState<"play" | "gallery">("play");
   const [resetting, setResetting] = useState(false);
+  const modalRef = useRef<HTMLElement>(null);
+  const restoreFocus = useRef<Element | null>(null);
   const open = (id: string) => {
-    game.dispatch({ type: "open", id });
-    game.clearMessage();
+    game.commit({ type: "open", id });
     setPage("play");
   };
+  // 模态确认期间：焦点移入对话框，棋盘与页面快捷键随 inert 一并隔离。
+  useEffect(() => {
+    if (!resetting) return;
+    restoreFocus.current = globalThis.document.activeElement;
+    const dialog = modalRef.current;
+    const first = dialog?.querySelector<HTMLElement>("[data-autofocus]");
+    (first ?? dialog?.querySelector("button"))?.focus();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setResetting(false);
+        return;
+      }
+      if (e.key !== "Tab" || !dialog) return;
+      const items = Array.from(dialog.querySelectorAll<HTMLElement>("button"));
+      if (!items.length) return;
+      const firstItem = items[0];
+      const lastItem = items[items.length - 1];
+      const active = globalThis.document.activeElement;
+      if (e.shiftKey && active === firstItem) {
+        e.preventDefault();
+        lastItem.focus();
+      } else if (!e.shiftKey && active === lastItem) {
+        e.preventDefault();
+        firstItem.focus();
+      }
+    };
+    globalThis.document.addEventListener("keydown", onKeyDown, true);
+    return () => {
+      globalThis.document.removeEventListener("keydown", onKeyDown, true);
+      (restoreFocus.current as HTMLElement | null)?.focus?.();
+    };
+  }, [resetting]);
   return (
     <div className="app-shell">
-      <nav className="rail">
+      <LiveRegion item={game.speechItem} />
+      <nav className="rail" inert={resetting}>
         <a className="brand-mark" href="#" aria-label="格间首页">
           <Grid2X2 size={25} />
         </a>
@@ -49,7 +84,7 @@ export function App() {
           <span>慢一点</span>
         </span>
       </nav>
-      <div className="main-shell">
+      <div className="main-shell" inert={resetting}>
         <header className="topbar">
           <a href="#" className="wordmark" onClick={() => setPage("play")}>
             格间<span>gejian</span>
@@ -82,19 +117,35 @@ export function App() {
                 <BoardPanel
                   puzzle={game.puzzle}
                   session={game.session}
-                  onMark={(index, mark) =>
-                    game.dispatch({ type: "mark", index, mark })
+                  initialFocus={game.focusByPuzzle[game.puzzle.id]}
+                  focusRequest={game.focusRequest}
+                  onFocusChange={(index) =>
+                    game.rememberFocus(game.puzzle.id, index)
                   }
-                  onUndo={() => game.dispatch({ type: "undo" })}
+                  onFocusRequestDone={game.clearFocusRequest}
+                  onMark={(index, mark) =>
+                    game.commit({ type: "mark", index, mark })
+                  }
+                  onUndo={() => game.commit({ type: "undo" })}
                   onReset={() => setResetting(true)}
+                  onAnnounce={game.announce}
                 />
-                <AssistPanel
-                  puzzle={game.puzzle}
-                  session={game.session}
-                  message={game.message}
-                  onHint={game.hint}
-                  onCheck={game.check}
-                />
+                <aside className="assist">
+                  <AssistPanel
+                    session={game.session}
+                    onHint={game.hint}
+                    onCheck={game.check}
+                  />
+                  <NoticeCenter
+                    notices={game.notices}
+                    puzzles={puzzles}
+                    document={game.document}
+                    onRead={game.readNotice}
+                    onJump={game.jumpTo}
+                    onDismiss={game.dismissNotice}
+                  />
+                  <QuietCard />
+                </aside>
               </div>
               <div className="bottom-row">
                 <JournalPanel
@@ -153,6 +204,7 @@ export function App() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="reset-title"
+            ref={modalRef}
           >
             <button
               className="modal-close"
@@ -166,12 +218,13 @@ export function App() {
               本题标记、计时和提示额度会重置。已完成的解题记录和收藏仍保留。
             </p>
             <div>
-              <button onClick={() => setResetting(false)}>继续解题</button>
+              <button data-autofocus onClick={() => setResetting(false)}>
+                继续解题
+              </button>
               <button
                 className="primary"
                 onClick={() => {
-                  game.dispatch({ type: "reset" });
-                  game.clearMessage();
+                  game.commit({ type: "reset" });
                   setResetting(false);
                 }}
               >

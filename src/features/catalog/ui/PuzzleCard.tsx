@@ -1,6 +1,8 @@
 import { Grid2X2, Check } from "lucide-react";
 import type { Puzzle, Session } from "../../../shared/types";
 import { completion } from "../../../shared/document";
+import { catalogLabel, puzzleAlias } from "../../a11y";
+import { puzzles } from "../model/puzzles";
 import { difficultyDots } from "../lib/filter";
 export function PuzzleCard({
   puzzle,
@@ -18,15 +20,15 @@ export function PuzzleCard({
     <button
       className={`puzzle-card ${selected ? "selected" : ""}`}
       onClick={onOpen}
+      aria-label={catalogLabel(puzzles, puzzle, session)}
+      aria-current={selected || undefined}
     >
       <span className="puzzle-icon" style={{ color: puzzle.color }}>
         {session?.solved ? <Check size={22} /> : <Grid2X2 size={22} />}
       </span>
       <span className="puzzle-info">
         <strong>
-          {session?.solved
-            ? puzzle.title
-            : `图案 ${puzzle.id === "bloom" ? "01" : puzzle.id === "heart" ? "02" : puzzle.id === "cup" ? "03" : puzzle.id === "cat" ? "04" : puzzle.id === "fern" ? "05" : "06"}`}
+          {session?.solved ? puzzle.title : puzzleAlias(puzzles, puzzle)}
         </strong>
         <small>
           {puzzle.size} × {puzzle.size}
@@ -37,7 +39,7 @@ export function PuzzleCard({
         </span>
       </span>
       <span className="puzzle-meta">
-        <span className="difficulty">
+        <span className="difficulty" aria-hidden="true">
           {"●".repeat(difficultyDots(puzzle.level))}
           {"○".repeat(3 - difficultyDots(puzzle.level))}
         </span>

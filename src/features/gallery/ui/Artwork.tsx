@@ -4,7 +4,8 @@ export function Artwork({ puzzle }: { puzzle: Puzzle }) {
     <div
       className="artwork"
       style={{ gridTemplateColumns: `repeat(${puzzle.size},1fr)` }}
-      aria-label={puzzle.title}
+      role="img"
+      aria-label={`作品「${puzzle.title}」的图案`}
     >
       {puzzle.solution.map((v, i) => (
         <span

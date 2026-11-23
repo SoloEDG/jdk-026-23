@@ -29,6 +29,15 @@ export function loadDocument(puzzles: Puzzle[]): {
           checks: Math.max(0, Number(saved.checks) || 0),
           seconds: Math.max(0, Number(saved.seconds) || 0),
           updatedAt: Date.now(),
+          rev: Math.max(0, Number(saved.rev) || 0),
+          hintRefs: Array.isArray(saved.hintRefs)
+            ? saved.hintRefs.filter(
+                (r: unknown): r is { id: string; index: number } =>
+                  !!r &&
+                  typeof (r as { id?: unknown }).id === "string" &&
+                  Number.isInteger((r as { index?: unknown }).index),
+              )
+            : [],
         };
         sessions[puzzle.id] = { ...session, solved: isSolved(puzzle, session) };
       }

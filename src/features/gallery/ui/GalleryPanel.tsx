@@ -1,5 +1,6 @@
 import { Download, LockKeyhole, Flower2 } from "lucide-react";
 import type { GameDocument, Puzzle } from "../../../shared/types";
+import { puzzleAlias } from "../../a11y";
 import { unlockedArt } from "../lib/artwork";
 import { downloadArtwork } from "../model/exportArt";
 import { Artwork } from "./Artwork";
@@ -27,11 +28,16 @@ export function GalleryPanel({
             <article
               className={`art-card ${unlocked ? "unlocked" : ""}`}
               key={p.id}
+              aria-label={
+                unlocked
+                  ? `已收藏作品「${p.title}」，${p.collection}，${p.size}×${p.size}`
+                  : `未揭晓的${puzzleAlias(puzzles, p)}，${p.collection}，${p.size}×${p.size}，完成解谜后揭晓`
+              }
             >
               {unlocked ? (
                 <Artwork puzzle={p} />
               ) : (
-                <div className="locked-art">
+                <div className="locked-art" aria-hidden="true">
                   <LockKeyhole size={23} />
                   <span>等待揭晓</span>
                 </div>
@@ -51,7 +57,12 @@ export function GalleryPanel({
                     <Download size={18} />
                   </button>
                 ) : (
-                  <button onClick={() => onOpen(p.id)}>去解谜</button>
+                  <button
+                    onClick={() => onOpen(p.id)}
+                    aria-label={`去解${puzzleAlias(puzzles, p)}`}
+                  >
+                    去解谜
+                  </button>
                 )}
               </div>
             </article>

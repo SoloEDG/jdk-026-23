@@ -9,6 +9,8 @@ export function newSession(puzzle: Puzzle): Session {
     seconds: 0,
     solved: false,
     updatedAt: Date.now(),
+    rev: 0,
+    hintRefs: [],
   };
 }
 export function newDocument(puzzle: Puzzle): GameDocument {
